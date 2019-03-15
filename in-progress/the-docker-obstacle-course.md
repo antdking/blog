@@ -18,8 +18,8 @@ Odds on, you'll also have a database, such as MySQL or PostgreSQL.
 
 The common way people would go about using these in development was:
 
-- Install a database to their local machine
+- Install a database to your local machine
 - Go through the hassle of setting up all the configs so your user can access the root user
-- Pray that the setup instructions they wrote work for everyone else in the team (they won't)
-- Move back to using SQLite without considering that their dev is now nothing like the production environment.
+- Pray that the setup instructions you wrote work for everyone else in the team (they won't)
+- Move back to using SQLite because now it's all on fire
 
