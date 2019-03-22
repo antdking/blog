@@ -225,3 +225,79 @@ services:
 
 By adding this to your `app` service, any modifications you make on your machine will
 be copied over your docker container.
+
+## Like every fairy tale..
+
+There's always a problem.
+In fact, there are several.
+
+I'm going to go over some that we've faced, and survived.
+
+## binding on MacOS
+
+A bind mount is where we mount a host directory or file into a container.
+Any changes will be copied between the two.
+
+Unfortunately, copying files to a docker container in MacOS is quite slow,
+and file access times are abysmal (10 vs 250 microseconds).
+
+This is due to needing to copy files into a virtual machine.
+
+As you can imagine, this will impact projects that have lots of files.
+It can be assumed that a lot of projects use dependencies, and certain projects will have a lot.
+
+Let's take a simple [React Application](https://github.com/cybojenix/docker-is-not-easy/tree/1-base).
+
+This application is the output of [create-react-app](https://reactjs.org/docs/create-a-new-react-app.html),
+and is just a quick way to have a project with some dependencies.
+
+As you can see from the compose file, we have a very simple setup:
+
+- take a node image
+- mount our project into it
+- install dependencies and start the server
+
+On MacOS, due to our above bind mount issue, this will be a slow task, and took around 90 seconds
+on a 2018 Macbook Pro.
+
+### Named volumes to the rescue!
+
+A named volume is kind of like a bind mount, except that we don't care where it's mounted to.
+This allows Docker to use a more efficient process on MacOS.
+
+First, identify which files we don't need to copy between the host and the container.
+This will probably be your dependencies, in the case of our React project above, this is `node_modules`.
+
+So, let's modify our compose file
+
+```yml
+volumes:
+  app_node_modules:
+
+services:
+  app:
+    ...
+    volumes:
+      - '.:/usr/src/app'
+      - 'app_node_modules:/usr/src/app/node_modules'
+```
+
+This will do three things:
+
+- `node_modules` is now read and written efficiently
+- `node_modules` will no longer appear on your host machine
+- `node_modules` will no longer be copied from your host machine to your container
+
+This was measured to take around 20 seconds on the same Macbook Pro.
+
+#### I need the dependencies on my host machine
+
+In general, it's not a good idea to share dependencies between your host and container.
+You end up with unusual bugs that only appear on your machine. Usually you'll notice the bugs,
+such as when a compiled dependency is used, but other times they're silent.
+
+With the above file, everything is in a volume, so you can safely install the dependencies on your
+host machine without impacting your container.
+
+If you're building an image, then you should add `node_modules` to your `.dockerignore` file (more on this later).
+
